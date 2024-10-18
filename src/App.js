@@ -1,79 +1,58 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import BackgroundRemover from './BackgroundRemover';
+import ImageGenerator from './ImageGenerator';
 
 function App() {
-  const [textPrompt, setTextPrompt] = useState('');
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleInputChange = (event) => {
-    setTextPrompt(event.target.value);
-  };
-
-  const generateImage = async () => {
-    if (!textPrompt) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev", {
-        method: 'POST',
-        headers: {
-          'Authorization': process.env.REACT_APP_HUGGINGFACE_TOKEN,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inputs: textPrompt,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const imageUrl = URL.createObjectURL(blob);
-      setGeneratedImage(imageUrl);
-
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Failed to generate image. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>AI Image Generator (FLUX.1-dev)</h1>
+    <Router>
+      <div style={{ textAlign: 'center', marginTop: '50px' }}>
+        <h1>AI Tools</h1>
 
-      <input
-        type="text"
-        placeholder="Enter a text prompt..."
-        value={textPrompt}
-        onChange={handleInputChange}
-        style={{ marginBottom: '20px', padding: '10px', width: '300px' }}
-      />
-      <br />
+        <nav style={{ marginBottom: '20px' }}>
+          <StyledLink to="/">Home</StyledLink>
+          <StyledLink to="/bgremover">Background Remover</StyledLink>
+          <StyledLink to="/imagegenerator">Image Generator</StyledLink>
+        </nav>
 
-      <button onClick={generateImage} disabled={loading} style={{ marginTop: '20px' }}>
-        {loading ? 'Generating image...' : 'Generate Image'}
-      </button>
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {generatedImage && (
-        <div style={{ marginTop: '20px' }}>
-          <img src={generatedImage} alt="Generated" style={{ width: '300px', height: 'auto' }} />
-          <br />
-          <a href={generatedImage} download="generated-image.png">
-            <button style={{ marginTop: '10px' }}>Download Image</button>
-          </a>
-        </div>
-      )}
-    </div>
+        <Routes>
+          <Route path="/bgremover" element={<BackgroundRemover />} />
+          <Route path="/imagegenerator" element={<ImageGenerator />} />
+          <Route path="/" element={<h2>Select a Tool from the Menu</h2>} />
+          <Route path="*" element={<h2>404 - Page Not Found</h2>} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
+
+// Styling
+const buttonStyle = {
+  display: 'inline-block',
+  padding: '10px 20px',
+  margin: '5px',
+  backgroundColor: '#007BFF',
+  color: 'white',
+  textDecoration: 'none',
+  borderRadius: '5px',
+  transition: 'background-color 0.3s, transform 0.3s',
+  fontSize: '16px',
+};
+
+const hoverStyle = {
+  backgroundColor: '#0056b3', // Darker shade for hover effect
+  transform: 'scale(1.05)',
+};
+
+const StyledLink = ({ to, children }) => (
+  <Link
+    to={to}
+    style={buttonStyle}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverStyle.backgroundColor)}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = buttonStyle.backgroundColor)}
+  >
+    {children}
+  </Link>
+);
 
 export default App;
