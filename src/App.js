@@ -21,7 +21,7 @@ function App() {
     fetch('https://clipdrop-api.co/remove-background/v1', {
       method: 'POST',
       headers: {
-        'x-api-key': process.env.REACT_APP_CLIPDROP_API_KEY, // Replace with your API key
+        'x-api-key': process.env.REACT_APP_CLIPDROP_API_KEY,
       },
       body: formData,
     })
@@ -29,7 +29,7 @@ function App() {
       .then((buffer) => {
         const blob = new Blob([buffer], { type: 'image/png' });
         const imageUrl = URL.createObjectURL(blob);
-        setProcessedImage(imageUrl);  // Set the processed image for display
+        setProcessedImage(imageUrl);
         setLoading(false);
       })
       .catch((error) => {
