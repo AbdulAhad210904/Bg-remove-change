@@ -1,59 +1,73 @@
 import React, { useState } from 'react';
 
 function App() {
-  const [photo, setPhoto] = useState(null);  // Store the uploaded photo
-  const [processedImage, setProcessedImage] = useState(null); // Store the image with background removed
-  const [loading, setLoading] = useState(false);  // Show loading indicator during API call
+  const [textPrompt, setTextPrompt] = useState('');
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Handle image upload
-  const handlePhotoUpload = (event) => {
-    setPhoto(event.target.files[0]);
+  const handleInputChange = (event) => {
+    setTextPrompt(event.target.value);
   };
 
-  // Function to handle API call and remove background
-  const removeBackground = () => {
-    if (!photo) return;
+  const generateImage = async () => {
+    if (!textPrompt) return;
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('image_file', photo);
+    setError('');
 
-    fetch('https://clipdrop-api.co/remove-background/v1', {
-      method: 'POST',
-      headers: {
-        'x-api-key': process.env.REACT_APP_CLIPDROP_API_KEY,
-      },
-      body: formData,
-    })
-      .then((response) => response.arrayBuffer())
-      .then((buffer) => {
-        const blob = new Blob([buffer], { type: 'image/png' });
-        const imageUrl = URL.createObjectURL(blob);
-        setProcessedImage(imageUrl);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        setLoading(false);
+    try {
+      const response = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev", {
+        method: 'POST',
+        headers: {
+          'Authorization': process.env.REACT_APP_HUGGINGFACE_TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: textPrompt,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const imageUrl = URL.createObjectURL(blob);
+      setGeneratedImage(imageUrl);
+
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Failed to generate image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Background Remover</h1>
+      <h1>AI Image Generator (FLUX.1-dev)</h1>
 
-      <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+      <input
+        type="text"
+        placeholder="Enter a text prompt..."
+        value={textPrompt}
+        onChange={handleInputChange}
+        style={{ marginBottom: '20px', padding: '10px', width: '300px' }}
+      />
       <br />
 
-      <button onClick={removeBackground} disabled={!photo || loading} style={{ marginTop: '20px' }}>
-        {loading ? 'Removing background...' : 'Remove Background'}
+      <button onClick={generateImage} disabled={loading} style={{ marginTop: '20px' }}>
+        {loading ? 'Generating image...' : 'Generate Image'}
       </button>
 
-      {processedImage && (
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {generatedImage && (
         <div style={{ marginTop: '20px' }}>
-          <img src={processedImage} alt="Processed" style={{ width: '300px', height: 'auto' }} />
+          <img src={generatedImage} alt="Generated" style={{ width: '300px', height: 'auto' }} />
           <br />
-          <a href={processedImage} download="no-bg.png">
+          <a href={generatedImage} download="generated-image.png">
             <button style={{ marginTop: '10px' }}>Download Image</button>
           </a>
         </div>
